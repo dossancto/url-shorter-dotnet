@@ -28,8 +28,7 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-
-app.MapPost("/new", async ([FromServices] IAmazonDynamoDB _dynamo, [FromBody] string target) =>
+app.MapPost("/", async ([FromServices] IAmazonDynamoDB _dynamo, [FromBody] CreateUrlRequest request, HttpRequest Request) =>
 {
     var code = NanoidDotNet.Nanoid.Generate(size: 4);
 
@@ -37,13 +36,13 @@ app.MapPost("/new", async ([FromServices] IAmazonDynamoDB _dynamo, [FromBody] st
 
     var item = new UriShorter(
         UrlCode: code,
-        Target: target
+        Target: request.Url
         );
     ;
 
     await context.SaveAsync(item);
 
-    return code;
+    return $"{Request.Scheme}://{Request.Host}/{code}";
 })
 .WithName("Short Url")
 .WithOpenApi()
