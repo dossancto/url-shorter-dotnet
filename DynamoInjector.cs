@@ -1,5 +1,6 @@
 using Amazon;
 using Amazon.DynamoDBv2;
+using Amazon.Runtime;
 
 namespace Urri;
 
@@ -12,9 +13,18 @@ public static class DynamoInjector
     {
         var profile = AppEnv.AWS.PROFILE;
 
+
+        var config = new AmazonDynamoDBConfig()
+        {
+            RegionEndpoint = RegionEndpoint.GetBySystemName(AppEnv.AWS.REGION.NotNull())
+        };
+
         if (profile.IsNotDefined())
         {
-            return new();
+            // Create AWS credentials object (not recommended)
+            var c = new BasicAWSCredentials(AppEnv.AWS.ACCESS_KEY_ID.NotNull(), AppEnv.AWS.SECRET_ACCESS_KEY.NotNull());
+
+            return new(c, config);
         }
 
         var credentialProfile = new Amazon.Runtime.CredentialManagement.CredentialProfileStoreChain()
@@ -22,20 +32,17 @@ public static class DynamoInjector
 
         if (!credentialProfile)
         {
-            return new();
+            return new(config);
         }
 
-        var config = new AmazonDynamoDBConfig()
-        {
-            RegionEndpoint = RegionEndpoint.GetBySystemName(AppEnv.AWS.REGION.NotNull())
-        };
 
         if (AppEnv.AWS.ENDPOINT.IsDefined())
         {
             config.ServiceURL = AppEnv.AWS.ENDPOINT.NotNull();
         }
 
-        Console.WriteLine("v3");
+        var cred = credentials.GetCredentials();
+
         return new(credentials: credentials, clientConfig: config);
     }
 
